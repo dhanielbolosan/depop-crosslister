@@ -1,19 +1,24 @@
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
 import json
 import os
 import sys
+import time
+from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-def load_depop_products(page):
+TIMEOUT_LONG = 60000
+TIMEOUT_SHORT = 10000
+TIMEOUT_SCROLL = 3000
+
+def get_listing_urls(page, base_url):
     print("Loading depop products...")
 
-    # Wait for products to load, return empty string if none found
+    # Wait for products to load, return empty if none found
     try:
-        page.wait_for_selector('a[href*="/products/"]', timeout=10000)
+        page.wait_for_selector('a[href*="/products/"]', timeout=TIMEOUT_SHORT)
     except:
-        print("Warning: No products found.")
-        return ""
+        print("Warning: No products found on profile.")
+        return []
 
     # Scroll down to load paginated products if any with 3 max attempts
     prev_count = 0
@@ -22,7 +27,7 @@ def load_depop_products(page):
 
     while True:
         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(TIMEOUT_SCROLL)
 
         curr_count = page.evaluate("() => document.querySelectorAll('a[href*=\"/products/\"]').length")
         
@@ -37,20 +42,101 @@ def load_depop_products(page):
 
         prev_count = curr_count
     
-    return page.content()
+    # Extract links after full load
+    html = page.content()
+    soup = BeautifulSoup(html, "html.parser")
+    products = []
+    seen = set()
 
-def fetch_depop_listings(username:str):
+    for product in soup.select('li[class*="listItem"]'):
+        if product.find(string="Sold"):
+            continue
+
+        url_tag = product.select_one('a[href*="/products/"]')
+
+        if url_tag:
+            href = url_tag.get('href')
+            full_url = urljoin(base_url, href)
+
+            if full_url not in seen:
+                seen.add(full_url)
+                products.append(full_url)
+    
+    return products
+
+def get_listing_details(page, product_url):
+    print(f"Loading product details for {product_url}...")
+
+    try: 
+        # 1. Navigate to the product page first
+        response = page.goto(product_url, wait_until="domcontentloaded", timeout=TIMEOUT_LONG)
+
+        # 2. Validate if product page exists
+        if response.status == 404 or page.locator("text=Page not found").is_visible():
+            print(f"Error: '{product_url}' is not a valid Depop product!")
+            return None
+    
+        # 3. Wait for content to load
+        try:
+            page.wait_for_selector('div[data-testid="productPrimaryAttributes"]', timeout=TIMEOUT_SHORT//2)
+        except:
+            pass
+
+        html = page.content()
+        soup = BeautifulSoup(html, "html.parser")
+
+        title_tag = soup.select_one('h1[class*="styles_title"]')
+        title = title_tag.get_text(strip=True) if title_tag else ""
+
+        price_tag = soup.select_one('p[aria-label="Price"]')
+        price = price_tag.get_text(strip=True) if price_tag else ""
+
+        desc_tag = soup.select_one('p[class*="styles_textWrapper"]')
+        description = desc_tag.get_text(strip=True) if desc_tag else ""
+
+        attr_container = soup.select('div[data-testid="productPrimaryAttributes"] p')
+        attributes = [attr.get_text(strip=True) for attr in attr_container]
+    
+        size = attributes[0] if len(attributes) > 0 else ""
+        condition = attributes[1] if len(attributes) > 1 else ""
+    
+        brand_tag = soup.select_one('div[data-testid="productPrimaryAttributes"] a')
+        brand = brand_tag.get_text(strip=True) if brand_tag else ""
+
+        images = []
+        for img in soup.select('div[class*="styles_imageContainer"] img'):
+            src = img.get('src')
+            if src and "media-photos.depop.com" in src and src not in images:
+                images.append(src)
+
+        return {
+            "url": product_url,
+            "title": title,
+            "price": price,
+            "description": description,
+            "size": size,
+            "condition": condition,
+            "brand": brand,
+            "images": images
+        }
+
+    except Exception as e:
+        print(f"Error: Failed to load product details for '{product_url}': {e}")
+        return None
+
+def scrape_depop_profile(username:str):
     base_url = "https://www.depop.com"
-    username_url = f"{base_url}/{username}/"
+    profile_url = f"{base_url}/{username}/"
+    all_product_details = []
 
     # Use playwright to navigate to page and load all depop products
     with sync_playwright() as playwright:
+
         # Avoid bot detection
         browser = playwright.chromium.launch(
             headless=True,
             args=[
                 "--disable-blink-features=AutomationControlled", 
-                "--disable-dev-shm-usage"
             ]
         )
 
@@ -61,47 +147,28 @@ def fetch_depop_listings(username:str):
             locale="en-US"
         )
         
-        print(f"Navigating to {username_url}...")
+        print(f"Navigating to {profile_url}...")
         page = context.new_page()
-        response = page.goto(username_url, wait_until="domcontentloaded", timeout=60000)
+        response = page.goto(profile_url, wait_until="domcontentloaded", timeout=TIMEOUT_LONG)
 
         if response.status == 404 or page.locator("text=Page not found").is_visible() or not page.locator('[class*="styles_shopHeader"]').is_visible():
             print(f"Error: '{username}' is not a valid Depop profile!")
             return []
 
-        html = load_depop_products(page)
+        product_urls = get_listing_urls(page, base_url)
+
+        for i, url in enumerate(product_urls):
+            print(f"[{i+1}/{len(product_urls)}] Extracting {url} ...")
+            details = get_listing_details(page, url)
+
+            if details:
+                all_product_details.append(details)
+            time.sleep(1)
         
         browser.close()
         context.close()
     
-    # Use BeautifulSoup to parse HTML and extract all listed depop products
-    soup = BeautifulSoup(html, "html.parser")
-
-    all_products = soup.select('li[class*="listItem"]')
-    products = []
-    seen = set()
-
-    for product in all_products:
-        # Skip sold products
-        if product.find(string="Sold"):
-            continue
-
-        link = product.select_one('a[href*="/products/"]')
-        if link:
-            href = link.get('href')
-            product_link = urljoin(base_url, href)
-
-            if product_link not in seen:
-                seen.add(product_link)
-                products.append({
-                    "url": product_link,
-                })
-    
-    if not products:
-        return []
-
-    print(f"Success: Found {len(products)} product listings")
-    return products
+    return all_product_details
 
 def save_depop_products(username: str, products_list: list, out_dir: str = "data") -> str:
     os.makedirs(out_dir, exist_ok=True)
@@ -122,7 +189,7 @@ def main():
         print("No username provided!")
         sys.exit(1)
 
-    listings = fetch_depop_listings(username)
+    listings = scrape_depop_profile(username)
     if listings:
         save_depop_products(username, listings)
 
