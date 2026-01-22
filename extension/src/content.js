@@ -1,16 +1,19 @@
 const data = {
-    "url": "https://www.depop.com/products/dbruhhhh-givenchy-flex-bracelet-like-pear-cut-8d64/",
-    "title": "",
-    "price": "20.00",
-    "description": "Givenchy flex bracelet style look alike Pear-Cut CZ Tennis Bracelet (\u203c\ufe0fSOLD AS 1 PRODUCT\u203c\ufe0f)\n\n*Length:** Approx. 7.5 inches\nBrand new dazzling bracelet, featuring a row of large pear cut cubic zirconia stones set in a high quality silver-tone setting. Each stone sparkles brilliantly in the light, making it a perfect accessory for weddings, formal events, or adding a touch of glam to your everyday look. Secure clasp for all-day wear.\nOther style on page\u203c\ufe0f\u203c\ufe0f#cubiczirconia#handmadejewelry#jewelrydesigner#luxury#givenchy",
-    "size": "Like new condition",
-    "condition": "",
-    "brand": "",
+    "url": "https://www.depop.com/products/dbruhhhh-large-crazy-insane-vintage-e9a1/",
+    "title": "Billabong Men's White and Grey Jacket",
+    "price": "40.00",
+    "description": "Large - Crazy Insane Vintage Surf Wear Grail Billabong Y2k All Embroidered Zip-up Turtleneck Jacket\n\n- SAME DAY / NEXT DAY SHIPPING \u2708\ufe0f\n- Measurements in photos \ud83d\udccf#surf#quiksilver#billabong#y2k#vintage",
+    "size": "L",
+    "condition": "Excellent",
+    "brand": "Billabong",
     "images": [
-        "https://media-photos.depop.com/b1/46077357/2676392842_dfa797e9585c44a5a3eb3f879c58dd04/P0.jpg",
-        "https://media-photos.depop.com/b1/46077357/2676392843_e9ba225b4ac240c69a12ef5782f489c6/P0.jpg",
-        "https://media-photos.depop.com/b1/46077357/2676392840_b06ac6db3b024181b7b91108c43c57fa/P0.jpg",
-        "https://media-photos.depop.com/b1/46077357/2676392841_ace2611a452943719a4631691a45530a/P0.jpg"
+        "https://media-photos.depop.com/b1/46077357/3325223260_063064965e0743d0a1f9261564891a58/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223263_c1ece82ff0f54d1e8efbab98d1203595/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223271_41e859b00e1c4b58af7bfc4df39fe53e/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223272_660abaf8944d4f81855747fa139ed214/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223273_7ff471193cec494d8eb2f6575df197db/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223278_c0dc1c3fa3824f2b99ef355371870b5f/P0.jpg",
+        "https://media-photos.depop.com/b1/46077357/3325223275_72e32e0531f843f8b8b7296b250acdd9/P0.jpg"
     ]
 }
 
