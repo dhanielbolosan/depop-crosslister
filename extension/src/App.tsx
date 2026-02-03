@@ -9,8 +9,32 @@ function App() {
   const [username, setUsername] = useState('');
 
   const handleSubmit = () => {
-    console.log(`${activeTab}ing for ${selectedPlatform} user: ${username}`);
-    // TODO: content script with storage
+    if (!username.trim()) {
+      console.error('Username is required');
+      return;
+    }
+
+    const payload = {
+      action: activeTab,
+      platform: selectedPlatform.toLowerCase(),
+      username: username
+    };
+
+    chrome.runtime.sendMessage(payload, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Communication Error:', chrome.runtime.lastError.message);
+        alert("Error: Could not connect to extension background.");
+        return;
+      }
+
+      if (response?.error) {
+        console.error('Task Failed:', response.error);
+        alert(`Error: ${response.error}`);
+        return;
+      }
+
+      console.log('Success:', response);
+    });
   };
 
   const handleViewData = () => {

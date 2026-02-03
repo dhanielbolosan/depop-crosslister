@@ -1,22 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "E-crosslister",
+  "name": "e-crosslister",
   "version": "1.0.0",
-  "description": "Crosslist your e-commerce listings to other platforms",
+  "description": "Crosslist your e-commerce listings",
   "action": {
     "default_popup": "index.html"
   },
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["scripting", "activeTab", "storage"],
   "host_permissions": [
-    "https://media-photos.depop.com/*"
+    "*://*.depop.com/*",
+    "*://*.vinted.com/*",
+    "*://*.vinted.co.uk/*"
   ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
   "content_scripts": [
     {
-      "js": ["src/content.js"],
-      "matches": [
-        "https://www.depop.com/*",
-        "https://www.vinted.com/*"
-      ]
+      "matches": ["*://*.depop.com/*"],
+      "js": ["src/content-scripts/depop/index.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.vinted.com/*", "*://*.vinted.co.uk/*"],
+      "js": ["src/content-scripts/vinted/index.ts"],
+      "run_at": "document_idle"
     }
   ]
 }
